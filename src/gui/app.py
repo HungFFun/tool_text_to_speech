@@ -26,7 +26,7 @@ class App:
 
         # Convert button style
         style.configure(
-            "Convert.TButton", font=("Helvetica", 12, "bold"), padding=(30, 30)
+            "Convert.TButton", font=("Helvetica", 12, "bold"), padding=(30, 15)
         )
 
         # Audio player styles
@@ -183,6 +183,7 @@ class App:
         voice_frame = ttk.LabelFrame(container, text="Voice Selection", padding=10)
         voice_frame.pack(fill=tk.X)
 
+        # Voice selection
         self.voice_var = tk.StringVar(value="Alloy")
         voice_combo = ttk.Combobox(
             voice_frame,
@@ -192,6 +193,78 @@ class App:
             width=20,
         )
         voice_combo.pack(fill=tk.X, padx=5, pady=5)
+
+        # Voice settings frame
+        settings_frame = ttk.Frame(voice_frame)
+        settings_frame.pack(fill=tk.X, pady=5)
+
+        # Pitch control
+        pitch_frame = ttk.Frame(settings_frame)
+        pitch_frame.pack(fill=tk.X, pady=2)
+
+        ttk.Label(pitch_frame, text="Pitch:", style="Small.TLabel").pack(
+            side=tk.LEFT, padx=5
+        )
+
+        self.pitch_var = tk.DoubleVar(value=1.0)
+        pitch_scale = ttk.Scale(
+            pitch_frame,
+            from_=0.5,
+            to=2.0,
+            orient="horizontal",
+            variable=self.pitch_var,
+            command=self.update_pitch,
+        )
+        pitch_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        self.pitch_label = ttk.Label(pitch_frame, text="1.0", style="Small.TLabel")
+        self.pitch_label.pack(side=tk.LEFT, padx=5)
+
+        # Stability control
+        stability_frame = ttk.Frame(settings_frame)
+        stability_frame.pack(fill=tk.X, pady=2)
+
+        ttk.Label(stability_frame, text="Stability:", style="Small.TLabel").pack(
+            side=tk.LEFT, padx=5
+        )
+
+        self.stability_var = tk.DoubleVar(value=0.5)
+        stability_scale = ttk.Scale(
+            stability_frame,
+            from_=0.0,
+            to=1.0,
+            orient="horizontal",
+            variable=self.stability_var,
+            command=self.update_stability,
+        )
+        stability_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        self.stability_label = ttk.Label(
+            stability_frame, text="0.5", style="Small.TLabel"
+        )
+        self.stability_label.pack(side=tk.LEFT, padx=5)
+
+        # Clarity control
+        clarity_frame = ttk.Frame(settings_frame)
+        clarity_frame.pack(fill=tk.X, pady=2)
+
+        ttk.Label(clarity_frame, text="Clarity:", style="Small.TLabel").pack(
+            side=tk.LEFT, padx=5
+        )
+
+        self.clarity_var = tk.DoubleVar(value=0.5)
+        clarity_scale = ttk.Scale(
+            clarity_frame,
+            from_=0.0,
+            to=1.0,
+            orient="horizontal",
+            variable=self.clarity_var,
+            command=self.update_clarity,
+        )
+        clarity_scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        self.clarity_label = ttk.Label(clarity_frame, text="0.5", style="Small.TLabel")
+        self.clarity_label.pack(side=tk.LEFT, padx=5)
 
     def setup_convert_button(self, container):
         self.convert_btn = ttk.Button(
@@ -289,6 +362,18 @@ class App:
         speed = round(float(value), 1)
         self.speed_label.config(text=f"{speed}x")
 
+    def update_pitch(self, value):
+        pitch = round(float(value), 2)
+        self.pitch_label.config(text=f"{pitch}")
+
+    def update_stability(self, value):
+        stability = round(float(value), 2)
+        self.stability_label.config(text=f"{stability}")
+
+    def update_clarity(self, value):
+        clarity = round(float(value), 2)
+        self.clarity_label.config(text=f"{clarity}")
+
     def convert_to_speech(self):
         try:
             text = self.text_area.get("1.0", tk.END).strip()
@@ -303,7 +388,13 @@ class App:
             start_time = time.time()
 
             voice = self.voice_var.get().lower()
-            audio_file = self.tts_engine.generate_speech(text, voice)
+            settings = {
+                "pitch": self.pitch_var.get(),
+                "stability": self.stability_var.get(),
+                "clarity": self.clarity_var.get(),
+            }
+
+            audio_file = self.tts_engine.generate_speech(text, voice, settings)
             self.audio_player.load(audio_file)
 
             # Calculate actual duration
