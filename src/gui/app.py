@@ -719,88 +719,54 @@ class App:
                 self.status_label.config(text="Please enter some text!")
                 return
 
-            # Kiểm tra độ dài văn bản
-            if len(text) > 4000:
-                chunks = []
-                current_chunk = ""
-                sentences = text.replace("\n", ". ").split(". ")
+            self.status_label.config(text="Starting conversion...")
+            self.root.update()
 
-                for sentence in sentences:
-                    if len(current_chunk) + len(sentence) + 2 <= 4000:
-                        current_chunk += sentence + ". "
-                    else:
-                        if current_chunk:
-                            chunks.append(current_chunk.strip())
-                        current_chunk = sentence + ". "
+            start_time = time.time()
+            voice = self.voice_var.get().lower()
+            settings = {
+                "pitch": self.pitch_var.get(),
+                "stability": self.stability_var.get(),
+                "clarity": self.clarity_var.get(),
+            }
 
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-
-                total_chunks = len(chunks)
+            # Set callback cho progress updates
+            def update_progress(completed, total):
+                percentage = (completed / total) * 100
                 self.status_label.config(
-                    text=f"Starting conversion of {self.format_number(len(text))} characters in {total_chunks} chunks..."
+                    text=f"Converting... {completed}/{total} chunks ({percentage:.1f}%)"
                 )
                 self.root.update()
 
-                start_time = time.time()
-                voice = self.voice_var.get().lower()
-                settings = {
-                    "pitch": self.pitch_var.get(),
-                    "stability": self.stability_var.get(),
-                    "clarity": self.clarity_var.get(),
-                }
+            self.tts_engine.set_progress_callback(update_progress)
 
-                # Set callback cho progress updates
-                self.tts_engine.set_progress_callback(self.update_conversion_progress)
+            # Xử lý text và tạo audio
+            audio_files = self.tts_engine.generate_speech_parallel(
+                text, voice, settings
+            )
 
-                # Xử lý song song các chunks
-                audio_files = self.tts_engine.generate_speech_parallel(
-                    chunks, voice, settings
-                )
-
-                # Ghép tất cả các file audio
+            # Ghép audio files nếu có nhiều file
+            if len(audio_files) > 1:
                 self.status_label.config(text="Combining audio chunks...")
                 self.root.update()
                 combined_audio = self.tts_engine.combine_audio_files(audio_files)
-
-                end_time = time.time()
-                actual_time = end_time - start_time
-                formatted_time = self.format_time(actual_time)
-                actual_cost = (len(text) / 1000) * 0.015
-                formatted_cost = self.format_price(actual_cost)
-
-                self.actual_time_label.config(text=f"Actual: {formatted_time}")
-                self.actual_cost_label.config(text=f"Actual: {formatted_cost}")
-                self.audio_player.load(combined_audio)
-                self.status_label.config(text="Conversion completed!")
-                self.update_audio_progress()
-
             else:
-                self.status_label.config(
-                    text=f"Converting {self.format_number(len(text))} characters..."
-                )
-                self.root.update()
+                combined_audio = audio_files[0]
 
-                start_time = time.time()
-                voice = self.voice_var.get().lower()
-                settings = {
-                    "pitch": self.pitch_var.get(),
-                    "stability": self.stability_var.get(),
-                    "clarity": self.clarity_var.get(),
-                }
+            # Cập nhật thông tin
+            end_time = time.time()
+            actual_time = end_time - start_time
+            formatted_time = self.format_time(actual_time)
+            actual_cost = (len(text) / 1000) * 0.015
+            formatted_cost = self.format_price(actual_cost)
 
-                audio_file = self.tts_engine.generate_speech(text, voice, settings)
-                end_time = time.time()
-                actual_time = end_time - start_time
-                formatted_time = self.format_time(actual_time)
-                actual_cost = (len(text) / 1000) * 0.015
-                formatted_cost = self.format_price(actual_cost)
-
-                self.actual_time_label.config(text=f"Actual: {formatted_time}")
-                self.actual_cost_label.config(text=f"Actual: {formatted_cost}")
-                self.audio_player.load(audio_file)
-                self.status_label.config(text="Conversion completed!")
-                self.update_audio_progress()
+            self.actual_time_label.config(text=f"Actual: {formatted_time}")
+            self.actual_cost_label.config(text=f"Actual: {formatted_cost}")
+            self.audio_player.load(combined_audio)
+            self.status_label.config(
+                text=f"Conversion completed! ({self.format_number(len(text))} characters in {formatted_time})"
+            )
+            self.update_audio_progress()
 
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
