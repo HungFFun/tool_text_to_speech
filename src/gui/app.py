@@ -169,34 +169,17 @@ class App:
         convert_btn.pack(side=tk.RIGHT)
 
     def setup_text_input(self, container):
-        # Input container
-        input_frame = ttk.Frame(container)
-        input_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Header frame
-        header_frame = ttk.Frame(input_frame)
-        header_frame.pack(fill=tk.X, pady=(0, 5))
-
-        # Title with icon
-        ttk.Label(header_frame, text="✏️ Input Text", style="Header.TLabel").pack(
-            side=tk.LEFT
-        )
-
-        # Character counter
-        self.char_counter = ttk.Label(header_frame, text="0/4000", style="TLabel")
-        self.char_counter.pack(side=tk.RIGHT)
-
-        # Create a frame to hold both canvas and text area
-        text_container = ttk.Frame(input_frame)
-        text_container.pack(fill=tk.BOTH, expand=True)
+        # Text input container with rounded corners
+        text_frame = ttk.Frame(container)
+        text_frame.pack(fill=tk.BOTH, expand=True)
 
         # Create canvas for rounded rectangle background
         self.canvas = tk.Canvas(
-            text_container, bg=self.bg_color, highlightthickness=0, bd=0
+            text_frame, bg=self.bg_color, highlightthickness=0, bd=0
         )
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
-        # Text area
+        # Text area with increased height
         self.text_area = tk.Text(
             self.canvas,
             font=("Helvetica", 12),
@@ -210,8 +193,72 @@ class App:
             selectforeground=self.text_color,
             relief="flat",
             borderwidth=0,
-            height=12,
+            height=20,
         )
+
+        # Bind text change events
+        self.text_area.bind("<KeyRelease>", self.update_text_info)  # Thêm binding này
+        self.text_area.bind("<KeyPress>", self.update_text_info)  # Và binding này
+
+        # Default text
+        self.text_area.insert("1.0", "Enter your text here...")
+        self.text_area.bind("<FocusIn>", self.clear_default_text)
+        self.text_area.bind("<FocusOut>", self.restore_default_text)
+
+        # Info frame
+        info_frame = ttk.Frame(text_frame, style="Dark.TFrame")
+        info_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+
+        # Column 1: Character and Word counts
+        count_frame = ttk.Frame(info_frame, style="Dark.TFrame")
+        count_frame.pack(side=tk.LEFT, padx=(0, 20))
+
+        self.char_counter = ttk.Label(
+            count_frame,
+            text="Characters: 0/4,000",
+            style="TLabel",
+            background=self.secondary_bg,
+        )
+        self.char_counter.pack(anchor=tk.W)
+
+        self.word_count_label = ttk.Label(
+            count_frame, text="Words: 0", style="TLabel", background=self.secondary_bg
+        )
+        self.word_count_label.pack(anchor=tk.W)
+
+        # Column 2: Time estimates
+        time_frame = ttk.Frame(info_frame, style="Dark.TFrame")
+        time_frame.pack(side=tk.LEFT, padx=(0, 20))
+
+        self.time_estimate_label = ttk.Label(
+            time_frame,
+            text="Est. Time: 0s",
+            style="TLabel",
+            background=self.secondary_bg,
+        )
+        self.time_estimate_label.pack(anchor=tk.W)
+
+        self.actual_time_label = ttk.Label(
+            time_frame, text="Actual: --", style="TLabel", background=self.secondary_bg
+        )
+        self.actual_time_label.pack(anchor=tk.W)
+
+        # Column 3: Cost estimates
+        cost_frame = ttk.Frame(info_frame, style="Dark.TFrame")
+        cost_frame.pack(side=tk.LEFT)
+
+        self.cost_estimate_label = ttk.Label(
+            cost_frame,
+            text="Est. Cost: $0.0000",
+            style="TLabel",
+            background=self.secondary_bg,
+        )
+        self.cost_estimate_label.pack(anchor=tk.W)
+
+        self.actual_cost_label = ttk.Label(
+            cost_frame, text="Actual: --", style="TLabel", background=self.secondary_bg
+        )
+        self.actual_cost_label.pack(anchor=tk.W)
 
         # Function to draw rounded rectangle
         def draw_rounded_corners(event=None):
@@ -250,39 +297,10 @@ class App:
                 outline=self.border_color,
             )
 
-            self.text_area.place(x=2, y=2, width=width - 4, height=height - 4)
+            self.text_area.place(x=0, y=0, width=width, height=height - 40)
+            info_frame.lift()  # Đảm bảo info_frame luôn hiển thị trên cùng
 
         self.canvas.bind("<Configure>", draw_rounded_corners)
-
-        # Info panel frame
-        info_panel = ttk.Frame(input_frame)
-        info_panel.pack(fill=tk.X, pady=(5, 0))
-
-        # Left side info (Word count)
-        left_info = ttk.Frame(info_panel)
-        left_info.pack(side=tk.LEFT)
-
-        self.word_count_label = ttk.Label(left_info, text="Words: 0", style="TLabel")
-        self.word_count_label.pack(side=tk.LEFT, padx=(0, 15))
-
-        # Right side info (Time estimates)
-        right_info = ttk.Frame(info_panel)
-        right_info.pack(side=tk.RIGHT)
-
-        self.time_estimate_label = ttk.Label(
-            right_info, text="Est. Time: 0s", style="TLabel"
-        )
-        self.time_estimate_label.pack(side=tk.LEFT, padx=(0, 15))
-
-        self.actual_time_label = ttk.Label(
-            right_info, text="Actual: --", style="TLabel"
-        )
-        self.actual_time_label.pack(side=tk.LEFT)
-
-        # Bind events
-        self.text_area.bind("<FocusIn>", self.on_focus_in)
-        self.text_area.bind("<FocusOut>", self.on_focus_out)
-        self.text_area.bind("<KeyRelease>", self.update_text_info)
 
     def setup_voice_selection(self, container):
         # Voice selection container with rounded corners
@@ -602,26 +620,52 @@ class App:
             self.text_area.insert("1.0", "Enter your text here...")
             self.text_area.config(fg=self.label_color)
 
+    def format_price(self, price):
+        """Format giá tiền với 4 chữ số thập phân"""
+        return f"${price:.4f}"
+
+    def format_time(self, seconds):
+        """Format thời gian sang dạng mm:ss hoặc hh:mm:ss"""
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            seconds = seconds % 60
+            return f"{minutes}m {seconds:.1f}s"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            seconds = seconds % 60
+            return f"{hours}h {minutes}m {seconds:.1f}s"
+
+    def format_number(self, number):
+        """Format số với dấu phẩy ngăn cách hàng nghìn"""
+        return f"{number:,}"
+
     def update_text_info(self, event=None):
         text = self.text_area.get("1.0", tk.END).strip()
         if text == "Enter your text here...":
             return
 
+        # Đếm ký tự
         char_count = len(text)
-        self.char_counter.config(text=f"{char_count}/4000")
+        formatted_char_count = self.format_number(char_count)
+        self.char_counter.config(text=f"Characters: {formatted_char_count}/4,000")
         if char_count > 4000:
             self.char_counter.config(foreground="#FF4444")
         else:
             self.char_counter.config(foreground=self.label_color)
 
-        # Update word count
+        # Đếm từ
         words = text.split()
         word_count = len(words)
-        self.word_count_label.config(text=f"Words: {word_count}")
+        formatted_word_count = self.format_number(word_count)
+        self.word_count_label.config(text=f"Words: {formatted_word_count}")
 
-        # Update time estimate
+        # Ước tính thời gian
         est_time = round(word_count / 3)  # Rough estimate: ~3 words per second
-        self.time_estimate_label.config(text=f"Est. Time: {est_time}s")
+        formatted_est_time = self.format_time(est_time)
+        self.time_estimate_label.config(text=f"Est. Time: {formatted_est_time}")
 
     def update_pitch(self, value):
         self.pitch_label.config(text=f"{float(value):.1f}")
@@ -634,7 +678,10 @@ class App:
 
     def update_conversion_progress(self, completed, total):
         """Callback để cập nhật tiến trình"""
-        self.status_label.config(text=f"Converting... {completed}/{total} chunks completed")
+        percentage = (completed / total) * 100
+        self.status_label.config(
+            text=f"Converting... {completed}/{total} chunks ({percentage:.1f}%)"
+        )
         self.root.update()
 
     def convert_to_speech(self):
@@ -646,7 +693,6 @@ class App:
 
             # Kiểm tra độ dài văn bản
             if len(text) > 4000:
-                # Chia văn bản thành các phần nhỏ hơn 4000 ký tự
                 chunks = []
                 current_chunk = ""
                 sentences = text.replace("\n", ". ").split(". ")
@@ -662,8 +708,9 @@ class App:
                 if current_chunk:
                     chunks.append(current_chunk.strip())
 
+                total_chunks = len(chunks)
                 self.status_label.config(
-                    text=f"Converting {len(chunks)} chunks in parallel..."
+                    text=f"Starting conversion of {self.format_number(len(text))} characters in {total_chunks} chunks..."
                 )
                 self.root.update()
 
@@ -689,16 +736,21 @@ class App:
                 combined_audio = self.tts_engine.combine_audio_files(audio_files)
 
                 end_time = time.time()
-                actual_time = round(end_time - start_time, 1)
+                actual_time = end_time - start_time
+                formatted_time = self.format_time(actual_time)
+                actual_cost = (len(text) / 1000) * 0.015
+                formatted_cost = self.format_price(actual_cost)
 
-                self.actual_time_label.config(text=f"Actual: {actual_time}s")
+                self.actual_time_label.config(text=f"Actual: {formatted_time}")
+                self.actual_cost_label.config(text=f"Actual: {formatted_cost}")
                 self.audio_player.load(combined_audio)
                 self.status_label.config(text="Conversion completed!")
                 self.update_audio_progress()
 
             else:
-                # Xử lý bình thường cho văn bản dưới 4000 ký tự
-                self.status_label.config(text="Converting...")
+                self.status_label.config(
+                    text=f"Converting {self.format_number(len(text))} characters..."
+                )
                 self.root.update()
 
                 start_time = time.time()
@@ -711,9 +763,13 @@ class App:
 
                 audio_file = self.tts_engine.generate_speech(text, voice, settings)
                 end_time = time.time()
-                actual_time = round(end_time - start_time, 1)
+                actual_time = end_time - start_time
+                formatted_time = self.format_time(actual_time)
+                actual_cost = (len(text) / 1000) * 0.015
+                formatted_cost = self.format_price(actual_cost)
 
-                self.actual_time_label.config(text=f"Actual: {actual_time}s")
+                self.actual_time_label.config(text=f"Actual: {formatted_time}")
+                self.actual_cost_label.config(text=f"Actual: {formatted_cost}")
                 self.audio_player.load(audio_file)
                 self.status_label.config(text="Conversion completed!")
                 self.update_audio_progress()
@@ -774,3 +830,18 @@ class App:
 
     def run(self):
         self.root.mainloop()
+
+    def clear_default_text(self, event):
+        """Xóa text mặc định khi focus vào text area"""
+        if self.text_area.get("1.0", tk.END).strip() == "Enter your text here...":
+            self.text_area.delete("1.0", tk.END)
+            self.text_area.config(fg=self.text_color)
+            self.update_text_info()
+
+    def restore_default_text(self, event):
+        """Khôi phục text mặc định khi không có nội dung và mất focus"""
+        if not self.text_area.get("1.0", tk.END).strip():
+            self.text_area.delete("1.0", tk.END)
+            self.text_area.insert("1.0", "Enter your text here...")
+            self.text_area.config(fg=self.label_color)
+            self.update_text_info()

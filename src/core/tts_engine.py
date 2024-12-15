@@ -70,6 +70,7 @@ class TTSEngine:
         self.progress_callback = callback
 
     def combine_audio_files(self, audio_files):
+        """Ghép nhiều file audio thành một file duy nhất sử dụng ffmpeg"""
         try:
             output_file = os.path.join(self.output_dir, f"combined_{int(time.time())}.mp3")
             
@@ -79,8 +80,10 @@ class TTSEngine:
                     abs_path = os.path.abspath(audio_file)
                     f.write(f"file '{abs_path}'\n")
 
+            # Thêm -loglevel error để ẩn các thông báo không cần thiết
             cmd = [
                 'ffmpeg',
+                '-loglevel', 'error',  # Chỉ hiển thị lỗi
                 '-f', 'concat',
                 '-safe', '0',
                 '-i', list_file,
@@ -88,8 +91,10 @@ class TTSEngine:
                 output_file
             ]
             
-            subprocess.run(cmd, check=True)
+            # Chuyển hướng stdout và stderr
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+            # Cleanup
             os.remove(list_file)
             for file in audio_files:
                 try:
