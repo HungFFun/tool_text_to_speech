@@ -53,10 +53,72 @@ class App:
         style.configure("Horizontal.TScale", sliderthickness=15, troughcolor="#E0E0E0")
 
         # LabelFrame style
-        style.configure("TLabelframe", padding=10)
-
+        style.configure("TLabelframe", 
+            padding=10,
+            borderwidth=1,
+            relief="solid",
+            background="#FFFFFF"
+        )
+        
         style.configure(
-            "TLabelframe.Label", font=("Helvetica", 10), foreground="#666666"
+            "TLabelframe.Label", 
+            font=("Helvetica", 10), 
+            foreground="#666666",
+            background="#FFFFFF"
+        )
+        
+        style.configure("TLabelframe.Border", 
+            bordercolor="#E0E0E0"
+        )
+
+        # Input frame style
+        style.configure(
+            "Input.TFrame",
+            background="#FFFFFF",
+            relief="solid",
+            borderwidth=1,
+            bordercolor="#E0E0E0"  # Thêm màu border
+        )
+        
+        # Input title style
+        style.configure(
+            "InputTitle.TLabel",
+            font=("Helvetica", 12, "bold"),
+            foreground="#333333",
+            padding=(0, 0, 10, 0),
+            background="#FFFFFF"
+        )
+        
+        # Counter style
+        style.configure(
+            "Counter.TLabel",
+            font=("Helvetica", 10),
+            foreground="#666666",
+            background="#FFFFFF"
+        )
+        
+        # Info panel style
+        style.configure(
+            "InfoPanel.TFrame",
+            background="#F8F9FA",
+            relief="solid",
+            borderwidth=1,
+            bordercolor="#E0E0E0"  # Thêm màu border
+        )
+        
+        # Info label style
+        style.configure(
+            "Info.TLabel",
+            font=("Helvetica", 9),
+            foreground="#666666",
+            background="#F8F9FA"
+        )
+
+        # Frame style
+        style.configure(
+            "TFrame",
+            borderwidth=0,
+            background="#f0f0f0"
         )
 
     def setup_ui(self):
@@ -130,53 +192,82 @@ class App:
         self.status_label.pack(side=tk.LEFT)
 
     def setup_text_input(self, container):
-        # Text area without border
+        # Input frame with border and background
+        input_frame = ttk.Frame(container, style="Input.TFrame")
+        input_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
+        # Header frame
+        header_frame = ttk.Frame(input_frame)
+        header_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
+
+        # Title with icon
+        title_frame = ttk.Frame(header_frame)
+        title_frame.pack(side=tk.LEFT)
+
+        ttk.Label(title_frame, text="✏️ Input Text", style="InputTitle.TLabel").pack(
+            side=tk.LEFT
+        )
+
+        # Character counter in header
+        self.char_counter = ttk.Label(
+            header_frame, text="0/4000", style="Counter.TLabel"
+        )
+        self.char_counter.pack(side=tk.RIGHT)
+
+        # Text area with custom styling
         self.text_area = tk.Text(
-            container,
-            height=10,
-            width=50,
+            input_frame,
             font=("Helvetica", 12),
             wrap=tk.WORD,
-            padx=10,
-            pady=10,
-            borderwidth=0,
-            highlightthickness=0,
+            padx=15,
+            pady=15,
+            spacing1=2,  # Space between lines
+            spacing2=2,  # Space between paragraphs
+            selectbackground="#0078D7",
+            selectforeground="white",
+            bg="#FFFFFF",
+            fg="#333333",
+            insertbackground="#333333",  # Cursor color
+            relief=tk.FLAT,
+            height=12,
         )
-        self.text_area.pack(fill=tk.BOTH, expand=True)
+        self.text_area.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
-        # Info frame (Character count, Word count & Time estimates)
-        info_frame = ttk.Frame(container)
-        info_frame.pack(fill=tk.X, pady=(5, 0))
+        # Placeholder text
+        self.placeholder_text = "Enter your text here..."
+        self.text_area.insert("1.0", self.placeholder_text)
+        self.text_area.config(fg="#999999")
 
-        # Left info (Characters and Words)
-        left_info = ttk.Frame(info_frame)
+        # Info panel frame
+        info_panel = ttk.Frame(input_frame, style="InfoPanel.TFrame")
+        info_panel.pack(fill=tk.X, padx=10, pady=(0, 10))
+
+        # Left side info (Word count)
+        left_info = ttk.Frame(info_panel)
         left_info.pack(side=tk.LEFT)
 
-        self.char_count_label = ttk.Label(
-            left_info, text="Characters: 0", style="Small.TLabel"
-        )
-        self.char_count_label.pack(side=tk.LEFT, padx=(0, 15))
-
         self.word_count_label = ttk.Label(
-            left_info, text="Words: 0", style="Small.TLabel"
+            left_info, text="Words: 0", style="Info.TLabel"
         )
-        self.word_count_label.pack(side=tk.LEFT)
+        self.word_count_label.pack(side=tk.LEFT, padx=(0, 15))
 
-        # Right info (Time estimates)
-        right_info = ttk.Frame(info_frame)
+        # Right side info (Time estimates)
+        right_info = ttk.Frame(info_panel)
         right_info.pack(side=tk.RIGHT)
 
         self.time_estimate_label = ttk.Label(
-            right_info, text="Estimated: 0s", style="Small.TLabel"
+            right_info, text="Est. Time: 0s", style="Info.TLabel"
         )
         self.time_estimate_label.pack(side=tk.LEFT, padx=(0, 15))
 
         self.actual_time_label = ttk.Label(
-            right_info, text="Actual: --", style="Small.TLabel"
+            right_info, text="Actual: --", style="Info.TLabel"
         )
         self.actual_time_label.pack(side=tk.LEFT)
 
-        # Bind text changes to update info
+        # Bind events
+        self.text_area.bind("<FocusIn>", self.on_focus_in)
+        self.text_area.bind("<FocusOut>", self.on_focus_out)
         self.text_area.bind("<KeyRelease>", self.update_text_info)
 
     def setup_voice_selection(self, container):
@@ -334,17 +425,37 @@ class App:
         self.volume_label = ttk.Label(volume_frame, text="100%", style="Small.TLabel")
         self.volume_label.pack(side=tk.LEFT, padx=5)
 
+    def on_focus_in(self, event):
+        if self.text_area.get("1.0", "end-1c") == self.placeholder_text:
+            self.text_area.delete("1.0", tk.END)
+            self.text_area.config(fg="#333333")
+
+    def on_focus_out(self, event):
+        if not self.text_area.get("1.0", "end-1c"):
+            self.text_area.insert("1.0", self.placeholder_text)
+            self.text_area.config(fg="#999999")
+
     def update_text_info(self, event=None):
+        # Skip update if placeholder text is showing
+        if self.text_area.get("1.0", "end-1c") == self.placeholder_text:
+            return
+
         # Get text content
         text = self.text_area.get("1.0", tk.END).strip()
         char_count = len(text)
         word_count = len(text.split())
 
-        # Update character and word count
-        self.char_count_label.config(text=f"Characters: {char_count}")
+        # Update character counter
+        self.char_counter.config(text=f"{char_count}/4000")
+        if char_count > 4000:
+            self.char_counter.config(foreground="red")
+        else:
+            self.char_counter.config(foreground="#666666")
+
+        # Update word count
         self.word_count_label.config(text=f"Words: {word_count}")
 
-        # Calculate estimated time (rough estimate: ~150 chars per second)
+        # Calculate estimated time
         estimated_seconds = round(char_count / 150, 1)
 
         # Format estimated time string
@@ -356,7 +467,7 @@ class App:
             time_str = f"{minutes}m {seconds}s"
 
         # Update time estimate
-        self.time_estimate_label.config(text=f"Estimated: {time_str}")
+        self.time_estimate_label.config(text=f"Est. Time: {time_str}")
 
     def update_speed(self, value):
         speed = round(float(value), 1)
