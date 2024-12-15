@@ -222,7 +222,10 @@ class App:
         count_frame.pack(side=tk.LEFT, padx=(0, 40))  # Tăng khoảng cách giữa các cột
 
         self.char_counter = ttk.Label(
-            count_frame, text="Characters: 0/4,000", style="TLabel", background=self.secondary_bg
+            count_frame,
+            text="Characters: 0/4,000",
+            style="TLabel",
+            background=self.secondary_bg,
         )
         self.char_counter.pack(anchor=tk.W, pady=(0, 5))
 
@@ -236,7 +239,10 @@ class App:
         time_frame.pack(side=tk.LEFT, padx=(0, 40))  # Tăng khoảng cách giữa các cột
 
         self.time_estimate_label = ttk.Label(
-            time_frame, text="Est. Time: 0s", style="TLabel", background=self.secondary_bg
+            time_frame,
+            text="Est. Time: 0s",
+            style="TLabel",
+            background=self.secondary_bg,
         )
         self.time_estimate_label.pack(anchor=tk.W, pady=(0, 5))
 
@@ -250,7 +256,10 @@ class App:
         cost_frame.pack(side=tk.LEFT)
 
         self.cost_estimate_label = ttk.Label(
-            cost_frame, text="Est. Cost: $0.0000", style="TLabel", background=self.secondary_bg
+            cost_frame,
+            text="Est. Cost: $0.0000",
+            style="TLabel",
+            background=self.secondary_bg,
         )
         self.cost_estimate_label.pack(anchor=tk.W, pady=(0, 5))
 
@@ -267,18 +276,30 @@ class App:
 
             self.canvas.delete("all")
             self.canvas.create_polygon(
-                radius, 0,
-                width - radius, 0,
-                width, 0,
-                width, radius,
-                width, height - radius,
-                width, height,
-                width - radius, height,
-                radius, height,
-                0, height,
-                0, height - radius,
-                0, radius,
-                0, 0,
+                radius,
+                0,
+                width - radius,
+                0,
+                width,
+                0,
+                width,
+                radius,
+                width,
+                height - radius,
+                width,
+                height,
+                width - radius,
+                height,
+                radius,
+                height,
+                0,
+                height,
+                0,
+                height - radius,
+                0,
+                radius,
+                0,
+                0,
                 smooth=True,
                 fill=self.secondary_bg,
                 outline=self.border_color,
@@ -290,8 +311,8 @@ class App:
         self.canvas.bind("<Configure>", draw_rounded_corners)
 
         # Bind text change events
-        self.text_area.bind('<KeyRelease>', self.update_text_info)
-        self.text_area.bind('<KeyPress>', self.update_text_info)
+        self.text_area.bind("<KeyRelease>", self.update_text_info)
+        self.text_area.bind("<KeyPress>", self.update_text_info)
 
         # Default text
         self.text_area.insert("1.0", "Enter your text here...")
@@ -639,6 +660,7 @@ class App:
         return f"{number:,}"
 
     def update_text_info(self, event=None):
+        """Cập nhật thông tin về text khi có thay đổi"""
         text = self.text_area.get("1.0", tk.END).strip()
         if text == "Enter your text here...":
             return
@@ -662,6 +684,16 @@ class App:
         est_time = round(word_count / 3)  # Rough estimate: ~3 words per second
         formatted_est_time = self.format_time(est_time)
         self.time_estimate_label.config(text=f"Est. Time: {formatted_est_time}")
+
+        # Ước tính chi phí
+        # OpenAI TTS pricing: $0.015 per 1,000 characters
+        estimated_cost = (char_count / 1000) * 0.015
+        formatted_cost = self.format_price(estimated_cost)
+        self.cost_estimate_label.config(text=f"Est. Cost: {formatted_cost}")
+
+        # Reset actual values
+        self.actual_time_label.config(text="Actual: --")
+        self.actual_cost_label.config(text="Actual: --")
 
     def update_pitch(self, value):
         self.pitch_label.config(text=f"{float(value):.1f}")
