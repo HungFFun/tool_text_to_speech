@@ -196,30 +196,35 @@ class App:
             height=20,
         )
 
-        # Bind text change events
-        self.text_area.bind("<KeyRelease>", self.update_text_info)  # Thêm binding này
-        self.text_area.bind("<KeyPress>", self.update_text_info)  # Và binding này
-
-        # Default text
-        self.text_area.insert("1.0", "Enter your text here...")
-        self.text_area.bind("<FocusIn>", self.clear_default_text)
-        self.text_area.bind("<FocusOut>", self.restore_default_text)
-
-        # Info frame
+        # Info frame with better styling
         info_frame = ttk.Frame(text_frame, style="Dark.TFrame")
-        info_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        info_frame.pack(fill=tk.X, padx=2, pady=(10, 2))  # Điều chỉnh padding ngoài
+
+        # Add background for info frame
+        info_bg = tk.Frame(
+            info_frame,
+            bg=self.secondary_bg,
+            highlightbackground=self.border_color,
+            highlightthickness=1,
+        )
+        info_bg.pack(fill=tk.X, padx=0, pady=0)
+
+        # Inner padding frame
+        inner_frame = ttk.Frame(info_bg, style="Dark.TFrame")
+        inner_frame.pack(fill=tk.X, padx=15, pady=10)
+
+        # Tạo frame chứa tất cả các cột để căn giữa
+        columns_container = ttk.Frame(inner_frame, style="Dark.TFrame")
+        columns_container.pack(expand=True)
 
         # Column 1: Character and Word counts
-        count_frame = ttk.Frame(info_frame, style="Dark.TFrame")
-        count_frame.pack(side=tk.LEFT, padx=(0, 20))
+        count_frame = ttk.Frame(columns_container, style="Dark.TFrame")
+        count_frame.pack(side=tk.LEFT, padx=(0, 40))  # Tăng khoảng cách giữa các cột
 
         self.char_counter = ttk.Label(
-            count_frame,
-            text="Characters: 0/4,000",
-            style="TLabel",
-            background=self.secondary_bg,
+            count_frame, text="Characters: 0/4,000", style="TLabel", background=self.secondary_bg
         )
-        self.char_counter.pack(anchor=tk.W)
+        self.char_counter.pack(anchor=tk.W, pady=(0, 5))
 
         self.word_count_label = ttk.Label(
             count_frame, text="Words: 0", style="TLabel", background=self.secondary_bg
@@ -227,16 +232,13 @@ class App:
         self.word_count_label.pack(anchor=tk.W)
 
         # Column 2: Time estimates
-        time_frame = ttk.Frame(info_frame, style="Dark.TFrame")
-        time_frame.pack(side=tk.LEFT, padx=(0, 20))
+        time_frame = ttk.Frame(columns_container, style="Dark.TFrame")
+        time_frame.pack(side=tk.LEFT, padx=(0, 40))  # Tăng khoảng cách giữa các cột
 
         self.time_estimate_label = ttk.Label(
-            time_frame,
-            text="Est. Time: 0s",
-            style="TLabel",
-            background=self.secondary_bg,
+            time_frame, text="Est. Time: 0s", style="TLabel", background=self.secondary_bg
         )
-        self.time_estimate_label.pack(anchor=tk.W)
+        self.time_estimate_label.pack(anchor=tk.W, pady=(0, 5))
 
         self.actual_time_label = ttk.Label(
             time_frame, text="Actual: --", style="TLabel", background=self.secondary_bg
@@ -244,16 +246,13 @@ class App:
         self.actual_time_label.pack(anchor=tk.W)
 
         # Column 3: Cost estimates
-        cost_frame = ttk.Frame(info_frame, style="Dark.TFrame")
+        cost_frame = ttk.Frame(columns_container, style="Dark.TFrame")
         cost_frame.pack(side=tk.LEFT)
 
         self.cost_estimate_label = ttk.Label(
-            cost_frame,
-            text="Est. Cost: $0.0000",
-            style="TLabel",
-            background=self.secondary_bg,
+            cost_frame, text="Est. Cost: $0.0000", style="TLabel", background=self.secondary_bg
         )
-        self.cost_estimate_label.pack(anchor=tk.W)
+        self.cost_estimate_label.pack(anchor=tk.W, pady=(0, 5))
 
         self.actual_cost_label = ttk.Label(
             cost_frame, text="Actual: --", style="TLabel", background=self.secondary_bg
@@ -268,39 +267,36 @@ class App:
 
             self.canvas.delete("all")
             self.canvas.create_polygon(
-                radius,
-                0,
-                width - radius,
-                0,
-                width,
-                0,
-                width,
-                radius,
-                width,
-                height - radius,
-                width,
-                height,
-                width - radius,
-                height,
-                radius,
-                height,
-                0,
-                height,
-                0,
-                height - radius,
-                0,
-                radius,
-                0,
-                0,
+                radius, 0,
+                width - radius, 0,
+                width, 0,
+                width, radius,
+                width, height - radius,
+                width, height,
+                width - radius, height,
+                radius, height,
+                0, height,
+                0, height - radius,
+                0, radius,
+                0, 0,
                 smooth=True,
                 fill=self.secondary_bg,
                 outline=self.border_color,
             )
 
             self.text_area.place(x=0, y=0, width=width, height=height - 40)
-            info_frame.lift()  # Đảm bảo info_frame luôn hiển thị trên cùng
+            info_frame.lift()
 
         self.canvas.bind("<Configure>", draw_rounded_corners)
+
+        # Bind text change events
+        self.text_area.bind('<KeyRelease>', self.update_text_info)
+        self.text_area.bind('<KeyPress>', self.update_text_info)
+
+        # Default text
+        self.text_area.insert("1.0", "Enter your text here...")
+        self.text_area.bind("<FocusIn>", self.clear_default_text)
+        self.text_area.bind("<FocusOut>", self.restore_default_text)
 
     def setup_voice_selection(self, container):
         # Voice selection container with rounded corners
