@@ -2,77 +2,95 @@ from openai import OpenAI
 import os
 import time
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class TTSEngine:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.output_dir = os.path.abspath("output")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.max_workers = 10
+        self.max_retries = 3
+        self.retry_delay = 1  # seconds
+
+    def generate_speech_with_retry(self, text, voice="alloy", settings=None):
+        for attempt in range(self.max_retries):
+            try:
+                return self.generate_speech(text, voice, settings)
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    raise e
+                time.sleep(self.retry_delay)
 
     def generate_speech(self, text, voice="alloy", settings=None):
         try:
-            # Tạo tên file duy nhất dựa trên timestamp
-            output_file = os.path.join(
-                self.output_dir, f"speech_{int(time.time())}.mp3"
-            )
-
+            output_file = os.path.join(self.output_dir, f"speech_{int(time.time()*1000)}.mp3")
+            
             response = self.client.audio.speech.create(
                 model="tts-1",
                 voice=voice,
                 input=text,
-                speed=settings.get("pitch", 1.0) if settings else 1.0,
+                speed=settings.get('pitch', 1.0) if settings else 1.0,
             )
 
-            # Lưu file audio
             response.stream_to_file(output_file)
             return output_file
 
         except Exception as e:
             raise Exception(f"Error generating speech: {str(e)}")
 
-    def combine_audio_files(self, audio_files):
-        """Ghép nhiều file audio thành một file duy nhất sử dụng ffmpeg"""
-        try:
-            output_file = os.path.join(
-                self.output_dir, f"combined_{int(time.time())}.mp3"
-            )
+    def generate_speech_parallel(self, chunks, voice="alloy", settings=None):
+        audio_files = []
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_chunk = {
+                executor.submit(self.generate_speech_with_retry, chunk, voice, settings): i 
+                for i, chunk in enumerate(chunks)
+            }
 
-            # Tạo file danh sách các audio files với đường dẫn tuyệt đối
+            completed = 0
+            total = len(chunks)
+            for future in as_completed(future_to_chunk):
+                chunk_index = future_to_chunk[future]
+                try:
+                    audio_file = future.result()
+                    completed += 1
+                    audio_files.append((chunk_index, audio_file))
+                    if self.progress_callback:
+                        self.progress_callback(completed, total)
+                except Exception as e:
+                    raise Exception(f"Error processing chunk {chunk_index}: {str(e)}")
+
+        audio_files.sort(key=lambda x: x[0])
+        return [file for _, file in audio_files]
+
+    def set_progress_callback(self, callback):
+        self.progress_callback = callback
+
+    def combine_audio_files(self, audio_files):
+        try:
+            output_file = os.path.join(self.output_dir, f"combined_{int(time.time())}.mp3")
+            
             list_file = os.path.join(self.output_dir, "files.txt")
             with open(list_file, "w") as f:
                 for audio_file in audio_files:
-                    # Chuyển đổi sang đường dẫn tuyệt đối
                     abs_path = os.path.abspath(audio_file)
                     f.write(f"file '{abs_path}'\n")
 
-            # Sử dụng ffmpeg để ghép các file
             cmd = [
-                "ffmpeg",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                list_file,
-                "-c",
-                "copy",
-                output_file,
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', list_file,
+                '-c', 'copy',
+                output_file
             ]
-
-            # Thêm logging để debug
-            print(f"Command: {' '.join(cmd)}")
-            print(f"Content of {list_file}:")
-            with open(list_file, "r") as f:
-                print(f.read())
-
+            
             subprocess.run(cmd, check=True)
 
-            # Xóa file danh sách
             os.remove(list_file)
-
-            # Xóa các file tạm
             for file in audio_files:
                 try:
                     os.remove(file)

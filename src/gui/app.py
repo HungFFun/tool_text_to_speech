@@ -632,6 +632,11 @@ class App:
     def update_clarity(self, value):
         self.clarity_label.config(text=f"{float(value):.1f}")
 
+    def update_conversion_progress(self, completed, total):
+        """Callback để cập nhật tiến trình"""
+        self.status_label.config(text=f"Converting... {completed}/{total} chunks completed")
+        self.root.update()
+
     def convert_to_speech(self):
         try:
             text = self.text_area.get("1.0", tk.END).strip()
@@ -644,8 +649,8 @@ class App:
                 # Chia văn bản thành các phần nhỏ hơn 4000 ký tự
                 chunks = []
                 current_chunk = ""
-                sentences = text.replace('\n', '. ').split('. ')
-                
+                sentences = text.replace("\n", ". ").split(". ")
+
                 for sentence in sentences:
                     if len(current_chunk) + len(sentence) + 2 <= 4000:
                         current_chunk += sentence + ". "
@@ -653,12 +658,13 @@ class App:
                         if current_chunk:
                             chunks.append(current_chunk.strip())
                         current_chunk = sentence + ". "
-                
+
                 if current_chunk:
                     chunks.append(current_chunk.strip())
 
-                # Convert từng phần và ghép lại
-                self.status_label.config(text=f"Converting {len(chunks)} chunks...")
+                self.status_label.config(
+                    text=f"Converting {len(chunks)} chunks in parallel..."
+                )
                 self.root.update()
 
                 start_time = time.time()
@@ -669,14 +675,13 @@ class App:
                     "clarity": self.clarity_var.get(),
                 }
 
-                # Xử lý từng chunk và lưu các file audio
-                audio_files = []
-                for i, chunk in enumerate(chunks, 1):
-                    self.status_label.config(text=f"Converting chunk {i}/{len(chunks)}...")
-                    self.root.update()
-                    
-                    audio_file = self.tts_engine.generate_speech(chunk, voice, settings)
-                    audio_files.append(audio_file)
+                # Set callback cho progress updates
+                self.tts_engine.set_progress_callback(self.update_conversion_progress)
+
+                # Xử lý song song các chunks
+                audio_files = self.tts_engine.generate_speech_parallel(
+                    chunks, voice, settings
+                )
 
                 # Ghép tất cả các file audio
                 self.status_label.config(text="Combining audio chunks...")
