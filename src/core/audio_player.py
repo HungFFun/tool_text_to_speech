@@ -1,4 +1,5 @@
 import pygame
+from mutagen.mp3 import MP3
 
 
 class AudioPlayer:
@@ -32,6 +33,7 @@ class AudioPlayer:
         return pygame.mixer.music.get_pos() / 1000.0
 
     def get_duration(self):
-        # This is a simplified duration getter
-        # You might want to use a library like mutagen for more accurate duration
-        return 30.0  # Return a default duration
+        if self.current_file:
+            audio = MP3(self.current_file)
+            return audio.info.length
+        return 0

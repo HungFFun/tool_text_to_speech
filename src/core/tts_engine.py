@@ -22,7 +22,6 @@ class TTSEngine:
                 voice=voice,
                 input=text,
                 speed=settings.get("pitch", 1.0),
-                # Các tham số khác có thể thêm vào tùy theo API hỗ trợ
             )
 
             output_file = self.output_dir / "output.mp3"
