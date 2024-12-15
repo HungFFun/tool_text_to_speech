@@ -639,25 +639,79 @@ class App:
                 self.status_label.config(text="Please enter some text!")
                 return
 
-            self.status_label.config(text="Converting...")
-            self.root.update()
+            # Kiểm tra độ dài văn bản
+            if len(text) > 4000:
+                # Chia văn bản thành các phần nhỏ hơn 4000 ký tự
+                chunks = []
+                current_chunk = ""
+                sentences = text.replace('\n', '. ').split('. ')
+                
+                for sentence in sentences:
+                    if len(current_chunk) + len(sentence) + 2 <= 4000:
+                        current_chunk += sentence + ". "
+                    else:
+                        if current_chunk:
+                            chunks.append(current_chunk.strip())
+                        current_chunk = sentence + ". "
+                
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
 
-            start_time = time.time()
-            voice = self.voice_var.get().lower()
-            settings = {
-                "pitch": self.pitch_var.get(),
-                "stability": self.stability_var.get(),
-                "clarity": self.clarity_var.get(),
-            }
+                # Convert từng phần và ghép lại
+                self.status_label.config(text=f"Converting {len(chunks)} chunks...")
+                self.root.update()
 
-            audio_file = self.tts_engine.generate_speech(text, voice, settings)
-            end_time = time.time()
-            actual_time = round(end_time - start_time, 1)
+                start_time = time.time()
+                voice = self.voice_var.get().lower()
+                settings = {
+                    "pitch": self.pitch_var.get(),
+                    "stability": self.stability_var.get(),
+                    "clarity": self.clarity_var.get(),
+                }
 
-            self.actual_time_label.config(text=f"Actual: {actual_time}s")
-            self.audio_player.load(audio_file)
-            self.status_label.config(text="Conversion completed!")
-            self.update_audio_progress()
+                # Xử lý từng chunk và lưu các file audio
+                audio_files = []
+                for i, chunk in enumerate(chunks, 1):
+                    self.status_label.config(text=f"Converting chunk {i}/{len(chunks)}...")
+                    self.root.update()
+                    
+                    audio_file = self.tts_engine.generate_speech(chunk, voice, settings)
+                    audio_files.append(audio_file)
+
+                # Ghép tất cả các file audio
+                self.status_label.config(text="Combining audio chunks...")
+                self.root.update()
+                combined_audio = self.tts_engine.combine_audio_files(audio_files)
+
+                end_time = time.time()
+                actual_time = round(end_time - start_time, 1)
+
+                self.actual_time_label.config(text=f"Actual: {actual_time}s")
+                self.audio_player.load(combined_audio)
+                self.status_label.config(text="Conversion completed!")
+                self.update_audio_progress()
+
+            else:
+                # Xử lý bình thường cho văn bản dưới 4000 ký tự
+                self.status_label.config(text="Converting...")
+                self.root.update()
+
+                start_time = time.time()
+                voice = self.voice_var.get().lower()
+                settings = {
+                    "pitch": self.pitch_var.get(),
+                    "stability": self.stability_var.get(),
+                    "clarity": self.clarity_var.get(),
+                }
+
+                audio_file = self.tts_engine.generate_speech(text, voice, settings)
+                end_time = time.time()
+                actual_time = round(end_time - start_time, 1)
+
+                self.actual_time_label.config(text=f"Actual: {actual_time}s")
+                self.audio_player.load(audio_file)
+                self.status_label.config(text="Conversion completed!")
+                self.update_audio_progress()
 
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
