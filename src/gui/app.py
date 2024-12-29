@@ -322,13 +322,13 @@ class App:
     def setup_voice_selection(self, container):
         # Voice selection container with rounded corners
         voice_container = ttk.Frame(container)
-        voice_container.pack(fill=tk.BOTH, expand=True, pady=5)
+        voice_container.pack(fill=tk.X, pady=5)
 
         # Create canvas for rounded rectangle background
         self.voice_canvas = tk.Canvas(
-            voice_container, bg=self.bg_color, highlightthickness=0, bd=0
+            voice_container, bg=self.bg_color, highlightthickness=0, bd=0, height=100
         )
-        self.voice_canvas.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        self.voice_canvas.pack(fill=tk.X, expand=False, padx=2, pady=2)
 
         # Main content frame
         voice_content = ttk.Frame(self.voice_canvas, style="Dark.TFrame")
@@ -376,7 +376,7 @@ class App:
 
         # Title
         title_frame = ttk.Frame(voice_content, style="Dark.TFrame")
-        title_frame.pack(fill=tk.X, pady=(0, 10))
+        title_frame.pack(fill=tk.X, pady=(0, 5))
 
         ttk.Label(
             title_frame,
@@ -387,9 +387,9 @@ class App:
 
         # Voice dropdown
         voice_frame = ttk.Frame(voice_content, style="Dark.TFrame")
-        voice_frame.pack(fill=tk.X, pady=(0, 15))
+        voice_frame.pack(fill=tk.X, pady=(0, 5))
 
-        self.voice_var = tk.StringVar(value="Alloy")
+        self.voice_var = tk.StringVar(value="Echo")
         voice_combo = ttk.Combobox(
             voice_frame,
             textvariable=self.voice_var,
@@ -397,109 +397,6 @@ class App:
             state="readonly",
         )
         voice_combo.pack(fill=tk.X)
-
-        # Voice settings
-        settings_frame = ttk.Frame(voice_content, style="Dark.TFrame")
-        settings_frame.pack(fill=tk.X, pady=5)
-
-        # Pitch control
-        pitch_frame = ttk.Frame(settings_frame, style="Dark.TFrame")
-        pitch_frame.pack(fill=tk.X, pady=(0, 10))
-
-        pitch_header = ttk.Frame(pitch_frame, style="Dark.TFrame")
-        pitch_header.pack(fill=tk.X)
-
-        ttk.Label(
-            pitch_header,
-            text="Pitch",
-            style="TLabel",
-            background=self.secondary_bg,
-        ).pack(side=tk.LEFT)
-
-        self.pitch_label = ttk.Label(
-            pitch_header,
-            text="1.0",
-            style="TLabel",
-            background=self.secondary_bg,
-        )
-        self.pitch_label.pack(side=tk.RIGHT)
-
-        self.pitch_var = tk.DoubleVar(value=1.0)
-        pitch_scale = ttk.Scale(
-            pitch_frame,
-            from_=0.5,
-            to=2.0,
-            orient="horizontal",
-            variable=self.pitch_var,
-            command=self.update_pitch,
-        )
-        pitch_scale.pack(fill=tk.X, pady=(5, 0))
-
-        # Stability control
-        stability_frame = ttk.Frame(settings_frame, style="Dark.TFrame")
-        stability_frame.pack(fill=tk.X, pady=(0, 10))
-
-        stability_header = ttk.Frame(stability_frame, style="Dark.TFrame")
-        stability_header.pack(fill=tk.X)
-
-        ttk.Label(
-            stability_header,
-            text="Stability",
-            style="TLabel",
-            background=self.secondary_bg,
-        ).pack(side=tk.LEFT)
-
-        self.stability_label = ttk.Label(
-            stability_header,
-            text="0.5",
-            style="TLabel",
-            background=self.secondary_bg,
-        )
-        self.stability_label.pack(side=tk.RIGHT)
-
-        self.stability_var = tk.DoubleVar(value=0.5)
-        stability_scale = ttk.Scale(
-            stability_frame,
-            from_=0.0,
-            to=1.0,
-            orient="horizontal",
-            variable=self.stability_var,
-            command=self.update_stability,
-        )
-        stability_scale.pack(fill=tk.X, pady=(5, 0))
-
-        # Clarity control
-        clarity_frame = ttk.Frame(settings_frame, style="Dark.TFrame")
-        clarity_frame.pack(fill=tk.X)
-
-        clarity_header = ttk.Frame(clarity_frame, style="Dark.TFrame")
-        clarity_header.pack(fill=tk.X)
-
-        ttk.Label(
-            clarity_header,
-            text="Clarity",
-            style="TLabel",
-            background=self.secondary_bg,
-        ).pack(side=tk.LEFT)
-
-        self.clarity_label = ttk.Label(
-            clarity_header,
-            text="0.5",
-            style="TLabel",
-            background=self.secondary_bg,
-        )
-        self.clarity_label.pack(side=tk.RIGHT)
-
-        self.clarity_var = tk.DoubleVar(value=0.5)
-        clarity_scale = ttk.Scale(
-            clarity_frame,
-            from_=0.0,
-            to=1.0,
-            orient="horizontal",
-            variable=self.clarity_var,
-            command=self.update_clarity,
-        )
-        clarity_scale.pack(fill=tk.X, pady=(5, 0))
 
     def setup_audio_player(self, container):
         # Audio player container with rounded corners
@@ -695,15 +592,6 @@ class App:
         self.actual_time_label.config(text="Actual: --")
         self.actual_cost_label.config(text="Actual: --")
 
-    def update_pitch(self, value):
-        self.pitch_label.config(text=f"{float(value):.1f}")
-
-    def update_stability(self, value):
-        self.stability_label.config(text=f"{float(value):.1f}")
-
-    def update_clarity(self, value):
-        self.clarity_label.config(text=f"{float(value):.1f}")
-
     def update_conversion_progress(self, completed, total):
         """Callback để cập nhật tiến trình"""
         percentage = (completed / total) * 100
@@ -724,11 +612,7 @@ class App:
 
             start_time = time.time()
             voice = self.voice_var.get().lower()
-            settings = {
-                "pitch": self.pitch_var.get(),
-                "stability": self.stability_var.get(),
-                "clarity": self.clarity_var.get(),
-            }
+            settings = {}  # Empty settings since we removed all controls
 
             # Set callback cho progress updates
             def update_progress(completed, total):
