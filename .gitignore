@@ -1,24 +1,44 @@
-# Python
+# Output directory
+output/
+output/*
+
+# Environment files
+.env
+venv/
+env/
+.venv/
+
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-build/
-develop-eggs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Audio files
+*.mp3
+*.wav
+*.ogg
+
+# Distribution / packaging
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
+build/
 *.egg-info/
-.installed.cfg
-*.egg
 
 # Environment variables
 .env
@@ -27,6 +47,17 @@ var/
 resources/audio/*
 !resources/audio/.gitkeep
 
-# IDE
-.idea/
-.vscode/
+# Parts
+parts/
+sdist/
+var/
+
+# Eggs
+eggs/
+.eggs/
+lib/
+lib64/
+
+# Installed configuration
+.installed.cfg
+*.egg
