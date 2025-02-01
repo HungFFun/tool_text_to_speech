@@ -1,21 +1,38 @@
-# Output directory
+# Output and resources
 output/
-output/*
+resources/audio/*
+!resources/audio/.gitkeep
 
 # Environment files
 .env
+.env.*
+!.env.example
 venv/
 env/
 .venv/
 
-# Python cache files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# IDE files
+# Distribution / packaging
+dist/
+build/
+eggs/
+*.egg-info/
+*.egg
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+.installed.cfg
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -34,30 +51,3 @@ Thumbs.db
 *.mp3
 *.wav
 *.ogg
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-
-# Environment variables
-.env
-
-# Audio files
-resources/audio/*
-!resources/audio/.gitkeep
-
-# Parts
-parts/
-sdist/
-var/
-
-# Eggs
-eggs/
-.eggs/
-lib/
-lib64/
-
-# Installed configuration
-.installed.cfg
-*.egg
