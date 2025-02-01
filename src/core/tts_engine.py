@@ -4,11 +4,13 @@ import time
 import subprocess
 from queue import Queue
 from threading import Thread
+from datetime import datetime
+import concurrent.futures
 
 
 class TTSEngine:
     def __init__(self):
-        self.output_dir = os.path.abspath("output")
+        self.output_dir = "output"  # Default output directory
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -24,19 +26,14 @@ class TTSEngine:
     def generate_speech(self, text, voice="alloy", settings=None):
         """Tạo speech từ text"""
         try:
-            output_file = os.path.join(
-                self.output_dir, f"speech_{int(time.time()*1000)}.mp3"
-            )
-
+            # Sử dụng text làm input và trả về response
             response = self.client.audio.speech.create(
                 model="tts-1",
                 voice=voice,
                 input=text,
                 speed=settings.get("pitch", 1.0) if settings else 1.0,
             )
-
-            response.stream_to_file(output_file)
-            return output_file
+            return response
 
         except Exception as e:
             raise Exception(f"Error generating speech: {str(e)}")
@@ -90,60 +87,48 @@ class TTSEngine:
 
         return chunks
 
-    def generate_speech_parallel(self, text, voice="alloy", settings=None):
-        """Xử lý song song với dynamic workers"""
-        # Tối ưu kích thước chunks
+    def generate_speech_parallel(self, text, voice="echo", settings=None):
+        # Create output directory if not exists
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+            
+        # Get current date for filename
+        current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Split text into chunks
         chunks = self.optimize_chunk_size(text)
-        total_chunks = len(chunks)
-        audio_files = [None] * total_chunks
-        errors = []
-
-        # Tạo và khởi động workers
-        num_workers = min(self.max_workers, total_chunks)
-        workers = []
-        for _ in range(num_workers):
-            t = Thread(target=self.worker)
-            t.start()
-            workers.append(t)
-
-        # Đưa tasks vào queue
-        for i, chunk in enumerate(chunks):
-            self.task_queue.put((i, chunk, voice, settings))
-
-        # Thêm None vào queue để signal workers dừng lại
-        for _ in range(num_workers):
-            self.task_queue.put(None)
-
-        # Xử lý kết quả khi có
-        completed = 0
-        while completed < total_chunks:
-            result = self.result_queue.get()
-            if len(result) == 2:  # Successful result
-                chunk_index, audio_file = result
-                audio_files[chunk_index] = audio_file
-            else:  # Error occurred
-                chunk_index, _, error = result
-                errors.append(f"Chunk {chunk_index}: {error}")
-
-            completed += 1
-            if self.progress_callback:
-                self.progress_callback(completed, total_chunks)
-
-        # Đợi tất cả workers hoàn thành
-        for worker in workers:
-            worker.join()
-
-        # Kiểm tra lỗi
-        if errors:
-            raise Exception("\n".join(errors))
-
-        # Lọc bỏ các None values (nếu có)
-        valid_files = [f for f in audio_files if f is not None]
-
-        if not valid_files:
-            raise Exception("No audio files were generated successfully")
-
-        return valid_files
+        audio_files = []
+        
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            
+            for i, chunk in enumerate(chunks):
+                # Format filename with segment number and date
+                output_path = os.path.join(
+                    self.output_dir, 
+                    f"segment_{i:03d}_{current_date}.mp3"
+                )
+                
+                future = executor.submit(
+                    self.convert_to_speech,  # Sử dụng convert_to_speech thay vì generate_speech
+                    chunk,
+                    output_path,
+                    voice,
+                    settings
+                )
+                futures.append(future)
+                
+            # Process results as they complete
+            for i, future in enumerate(concurrent.futures.as_completed(futures)):
+                try:
+                    audio_file = future.result()
+                    audio_files.append(audio_file)
+                    if self.progress_callback:
+                        self.progress_callback(i + 1, len(chunks))
+                except Exception as e:
+                    print(f"Error processing chunk {i}: {str(e)}")
+                    
+        return sorted(audio_files)  # Return sorted to maintain order
 
     def combine_audio_files(self, audio_files):
         """Ghép nhiều file audio thành một file duy nhất"""
@@ -189,3 +174,19 @@ class TTSEngine:
 
         except Exception as e:
             raise Exception(f"Error combining audio files: {str(e)}")
+
+    def convert_to_speech(self, text, output_path, voice="alloy", settings=None):
+        """Alias for generate_speech with output_path parameter"""
+        try:
+            response = self.client.audio.speech.create(
+                model="tts-1",
+                voice=voice,
+                input=text,
+                speed=settings.get("pitch", 1.0) if settings else 1.0,
+            )
+
+            response.stream_to_file(output_path)
+            return output_path
+
+        except Exception as e:
+            raise Exception(f"Error generating speech: {str(e)}")
